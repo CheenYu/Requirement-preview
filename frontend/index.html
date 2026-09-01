@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>需求澄清与方案预审 Agent</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Requirement Clarification &amp; Solution Pre-Review</p>
+          <h1>需求澄清与方案预审 Agent</h1>
+          <p class="hero-text">
+            在需求进入开发前，先做完整度初检、清晰度门禁、方案预审和风险扫描。
+          </p>
+        </div>
+        <div class="hero-status">
+          <div class="stat-chip">
+            <span class="stat-label">API</span>
+            <strong id="health-status">检查中</strong>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-label">Agent</span>
+            <strong id="agent-status">加载中</strong>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-label">任务</span>
+            <strong id="task-status-chip">未开始</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel panel-form">
+          <div class="panel-heading">
+            <h2>需求输入</h2>
+            <p>提交真实需求文本，并补充用户、约束和上下文。</p>
+          </div>
+
+          <form id="review-form" class="review-form">
+            <label class="field">
+              <span>API Base URL</span>
+              <input id="api-base" name="apiBase" type="url" placeholder="http://127.0.0.1:8000" />
+            </label>
+
+            <label class="field">
+              <span>任务标题</span>
+              <input id="title" name="title" type="text" placeholder="例如：订单导出能力预审" />
+            </label>
+
+            <label class="field field-lg">
+              <span>需求文本</span>
+              <textarea
+                id="requirement-text"
+                name="requirementText"
+                rows="12"
+                placeholder="粘贴 PRD 摘要、需求描述或接口说明。"
+                required
+              ></textarea>
+            </label>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>目标用户</span>
+                <textarea
+                  id="target-users"
+                  name="targetUsers"
+                  rows="4"
+                  placeholder="每行一个，例如：&#10;运营&#10;客服"
+                ></textarea>
+              </label>
+
+              <label class="field">
+                <span>明确约束</span>
+                <textarea
+                  id="explicit-constraints"
+                  name="explicitConstraints"
+                  rows="4"
+                  placeholder="每行一个，例如：&#10;本月上线&#10;复用现有权限模型"
+                ></textarea>
+              </label>
+            </div>
+
+            <label class="field">
+              <span>补充上下文</span>
+              <textarea
+                id="supplemental-context"
+                name="supplementalContext"
+                rows="5"
+                placeholder="补充背景、已知事实、接口依赖或非功能要求。每行一条。"
+              ></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button id="submit-button" class="button button-primary" type="submit">发起预审</button>
+              <button id="reset-button" class="button button-secondary" type="button">清空表单</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel panel-results">
+          <div class="panel-heading">
+            <h2>运行结果</h2>
+            <p id="status-message">等待提交需求。</p>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="metric-card">
+              <span class="metric-label">任务状态</span>
+              <strong id="task-status">未开始</strong>
+              <small id="task-id">Task ID: -</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">清晰度评分</span>
+              <strong id="clarity-score">-</strong>
+              <small id="clarity-rationale">等待运行</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">阶段门禁</span>
+              <strong id="gate-status">-</strong>
+              <small id="gate-detail">未执行</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">工具调用</span>
+              <strong id="tool-summary">-</strong>
+              <small id="tool-detail">无记录</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">风险 / 决策</span>
+              <strong id="risk-decision-summary">-</strong>
+              <small id="risk-decision-detail">等待运行</small>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">耗时 / 产物</span>
+              <strong id="elapsed-summary">-</strong>
+              <small id="artifact-detail">等待运行</small>
+            </article>
+          </div>
+
+          <section class="result-block">
+            <div class="result-header">
+              <h3>阶段执行摘要</h3>
+            </div>
+            <div id="stage-results" class="timeline empty-state">任务运行后显示阶段记录。</div>
+          </section>
+
+          <section class="result-block">
+            <div class="result-header">
+              <h3>Markdown 报告</h3>
+              <div class="inline-actions">
+                <button id="download-markdown" class="button button-tertiary" type="button" disabled>下载 Markdown</button>
+              </div>
+            </div>
+            <div id="markdown-preview" class="markdown-preview empty-state">任务完成后显示报告。</div>
+          </section>
+
+          <section class="result-block">
+            <div class="result-header">
+              <h3>JSON 结构化结果</h3>
+              <div class="inline-actions">
+                <button id="download-json" class="button button-tertiary" type="button" disabled>下载 JSON</button>
+              </div>
+            </div>
+            <pre id="json-preview" class="code-preview empty-state">任务完成后显示 JSON 输出。</pre>
+          </section>
+
+          <section class="result-block">
+            <div class="result-header">
+              <h3>工具调用状态</h3>
+            </div>
+            <div id="tool-calls" class="tool-calls empty-state">任务完成后显示工具调用详情。</div>
+          </section>
+
+          <section class="result-block">
+            <div class="result-header">
+              <h3>归档产物路径</h3>
+            </div>
+            <div id="artifact-paths" class="artifact-paths empty-state">任务完成后显示归档文件路径。</div>
+          </section>
+
+          <section id="error-panel" class="error-panel hidden" aria-live="polite"></section>
+        </section>
+      </main>
+    </div>
+
+    <template id="stage-template">
+      <article class="timeline-item">
+        <div class="timeline-stage"></div>
+        <div class="timeline-body">
+          <div class="timeline-topline">
+            <strong class="timeline-agent"></strong>
+            <span class="timeline-status"></span>
+          </div>
+          <p class="timeline-summary"></p>
+          <small class="timeline-tools"></small>
+        </div>
+      </article>
+    </template>
+
+    <template id="tool-template">
+      <article class="tool-item">
+        <div class="tool-topline">
+          <strong class="tool-name"></strong>
+          <span class="tool-badge"></span>
+        </div>
+        <p class="tool-meta"></p>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
