@@ -1,0 +1,18 @@
+{
+  "case_id": "approval_scope_ambiguity",
+  "title": "审批中心一期范围模糊",
+  "requirement_text": "目标是减少跨部门审批的人工沟通成本。\n运营主管和财务需要在审批中心统一处理申请。\n一期先把所有审批相关能力统一做掉，细节后续再补。\n需要接入 OA API，并在本周给管理层演示。",
+  "target_users": [
+    "运营主管",
+    "财务"
+  ],
+  "explicit_constraints": [
+    "本周演示"
+  ],
+  "expected_gate_opened": false,
+  "tags": [
+    "scope-creep",
+    "timeline-risk"
+  ],
+  "notes": "范围表述过宽且缺少验收与非功能约束。"
+}

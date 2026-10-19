@@ -1,7 +1,55 @@
+# Environment and local configuration
 .env
+.env.*
+!.env.example
+
+# Credentials and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+credentials*.json
+service-account*.json
+.netrc
+.npmrc
+.pypirc
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.idea/
+.vscode/
 .DS_Store
+Thumbs.db
+
+# Logs and local runtime files
+*.log
+*.pid
+
+# Generated application and evaluation artifacts
 data/*
 !data/.gitkeep
+evals/outputs/*
+!evals/outputs/.gitkeep
+
+# Local project documentation
+docs/

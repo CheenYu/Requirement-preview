@@ -6,13 +6,21 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from agents.requirement_pre_review.src.follow_up import (
+    ClarificationAnswer,
+    FollowUpInput,
+    RequirementFollowUpAgent,
+    persist_follow_up_result,
+)
+from agents.requirement_pre_review.src.config import WorkflowConfig
 from backend.agents.registry import AgentRegistry, agent_registry
 from backend.config import AppConfig, load_app_config
 from backend.maintenance import ensure_runtime_dirs
-from backend.models import AgentListResponse, HealthResponse, TaskCreateRequest, TaskRecord
+from backend.models import AgentListResponse, HealthResponse, TaskCreateRequest, TaskRecord, TaskStatus
 from backend.tasks.manager import TaskManager, task_manager
 from backend.tasks.runner import TaskRunner
 
@@ -25,6 +33,12 @@ class ErrorResponse(BaseModel):
 
 class TaskRunRequest(BaseModel):
     background: bool = True
+
+
+class TaskFollowUpRequest(BaseModel):
+    answers: list[ClarificationAnswer] = Field(default_factory=list)
+    additional_context: list[str] = Field(default_factory=list)
+    title: str | None = None
 
 
 @asynccontextmanager
@@ -56,6 +70,12 @@ def create_app(
     app.state.agent_registry = active_registry
     app.state.task_manager = active_manager
     app.state.task_runner = active_runner
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.exception_handler(HTTPException)
     async def handle_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
@@ -103,6 +123,47 @@ def create_app(
         manager_obj: TaskManager = app.state.task_manager
         return _get_task_or_404(manager_obj, task_id)
 
+    @app.post("/tasks/{task_id}/follow-up", response_model=TaskRecord)
+    def run_follow_up(task_id: str, request: TaskFollowUpRequest) -> TaskRecord:
+        manager_obj: TaskManager = app.state.task_manager
+        registry_obj: AgentRegistry = app.state.agent_registry
+        task = _get_task_or_404(manager_obj, task_id)
+        if not request.answers and not request.additional_context:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={
+                    "error": "Follow-up requires at least one answer or additional context.",
+                    "code": "follow_up_empty",
+                },
+            )
+        if task.status != TaskStatus.completed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"error": "Task must be completed before follow-up.", "code": "task_not_completed"},
+            )
+        config = _resolve_workflow_config(registry_obj, task)
+        follow_up_agent = RequirementFollowUpAgent(config=config)
+        result = follow_up_agent.run(
+            task,
+            FollowUpInput(
+                answers=request.answers,
+                additional_context=request.additional_context,
+                title=request.title,
+            ),
+        )
+        follow_up_path = persist_follow_up_result(result)
+        result_payload = result.model_dump(mode="json")
+        result_payload["artifact_paths"]["follow_up"] = follow_up_path
+        return manager_obj.update_artifacts(
+            task_id,
+            artifacts={"follow_up": result_payload},
+            metadata={
+                "follow_up_version": result.version,
+                "follow_up_gate_opened": result.gate_opened,
+                "follow_up_clarity_score": result.clarity_score,
+            },
+        )
+
     return app
 
 
@@ -117,7 +178,16 @@ def _not_found(code: str, message: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": message, "code": code})
 
 
+def _resolve_workflow_config(registry: AgentRegistry, task: TaskRecord) -> WorkflowConfig | None:
+    try:
+        agent = registry.get(task.agent_id)
+    except KeyError:
+        return None
+    config = getattr(agent, "config", None)
+    return config if isinstance(config, WorkflowConfig) else None
+
+
 app = create_app()
 
 
-__all__ = ["ErrorResponse", "TaskRunRequest", "app", "create_app"]
+__all__ = ["ErrorResponse", "TaskFollowUpRequest", "TaskRunRequest", "app", "create_app"]

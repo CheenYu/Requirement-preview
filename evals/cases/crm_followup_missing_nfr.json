@@ -1,0 +1,19 @@
+{
+  "case_id": "crm_followup_missing_nfr",
+  "title": "CRM 跟进记录查询",
+  "requirement_text": "目标是帮助销售更快查看客户跟进记录。\n销售和销售主管需要在后台查看客户跟进列表和详情。\n本期范围包括列表、详情、客户名称筛选和最近跟进时间排序。\n需要复用现有 CRM 账号体系，并在两周内上线。\n依赖 CRM API 返回跟进记录和客户基础信息。\n验收标准是销售可以按客户名称检索并打开最近一次跟进详情。",
+  "target_users": [
+    "销售",
+    "销售主管"
+  ],
+  "explicit_constraints": [
+    "两周内上线",
+    "复用现有 CRM 账号体系"
+  ],
+  "expected_gate_opened": true,
+  "tags": [
+    "missing-nfr",
+    "pass-gate"
+  ],
+  "notes": "缺少明确非功能要求，但其余维度较完整，当前规则下应仍可通过门禁。"
+}

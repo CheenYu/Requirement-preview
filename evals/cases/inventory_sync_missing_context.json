@@ -1,0 +1,14 @@
+{
+  "case_id": "inventory_sync_missing_context",
+  "title": "库存同步信息缺失",
+  "requirement_text": "目标是减少人工维护库存的时间。\n仓储同学希望系统每天同步一次库存状态。\n本期先支持同步库存数量和状态字段。\n需要调用 WMS API。",
+  "target_users": [
+    "仓储"
+  ],
+  "expected_gate_opened": false,
+  "tags": [
+    "missing-info",
+    "no-acceptance"
+  ],
+  "notes": "缺少约束、非功能和验收标准，属于典型信息缺失样例。"
+}

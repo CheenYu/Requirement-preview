@@ -1,0 +1,51 @@
+[
+  {
+    "decision_id": "DEC-001",
+    "topic": "objective",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-002",
+    "topic": "target_users",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-003",
+    "topic": "scope",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-004",
+    "topic": "constraints",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-005",
+    "topic": "data_dependencies",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-006",
+    "topic": "non_functional",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  },
+  {
+    "decision_id": "DEC-007",
+    "topic": "acceptance_criteria",
+    "status": "confirmed",
+    "rationale": "发现明确证据，可进入后续分析。",
+    "owner": "product"
+  }
+]

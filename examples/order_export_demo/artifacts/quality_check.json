@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "score": 100,
+  "section_presence": {
+    "需求摘要": true,
+    "已确认信息": true,
+    "待确认问题": true,
+    "范围与优先级": true,
+    "技术方案": true,
+    "风险与对策": true,
+    "验收标准": true,
+    "下一步行动": true
+  },
+  "issues": [],
+  "suggested_actions": [
+    "报告结构完整，可进入导出或归档。"
+  ]
+}

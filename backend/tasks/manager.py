@@ -68,5 +68,23 @@ class TaskManager:
             task.updated_at = datetime.now()
             return task
 
+    def update_artifacts(
+        self,
+        task_id: str,
+        *,
+        artifacts: dict,
+        metadata: dict | None = None,
+        output: str | None = None,
+    ) -> TaskRecord:
+        with self._lock:
+            task = self._tasks[task_id]
+            task.artifacts.update(artifacts)
+            if metadata is not None:
+                task.metadata.update(metadata)
+            if output is not None:
+                task.output = output
+            task.updated_at = datetime.now()
+            return task
+
 
 task_manager = TaskManager()

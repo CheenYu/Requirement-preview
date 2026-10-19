@@ -117,4 +117,5 @@ class EvaluationResult(BaseModel):
     section_completeness: int = Field(ge=0, le=100)
     gate_opened: bool
     tool_error_count: int = 0
+    tool_call_count: int = 0
     workflow_latency_ms: int = 0

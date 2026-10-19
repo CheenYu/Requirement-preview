@@ -9,7 +9,7 @@ const state = {
   pollTimer: null,
   currentTask: null,
   reportMarkdown: "",
-  reportJson: null,
+  openQuestions: [],
 };
 
 const elements = {
@@ -40,12 +40,13 @@ const elements = {
   statusMessage: document.querySelector("#status-message"),
   stageResults: document.querySelector("#stage-results"),
   markdownPreview: document.querySelector("#markdown-preview"),
-  jsonPreview: document.querySelector("#json-preview"),
   toolCalls: document.querySelector("#tool-calls"),
-  artifactPaths: document.querySelector("#artifact-paths"),
   errorPanel: document.querySelector("#error-panel"),
   downloadMarkdown: document.querySelector("#download-markdown"),
-  downloadJson: document.querySelector("#download-json"),
+  followUpQuestions: document.querySelector("#follow-up-questions"),
+  submitFollowUp: document.querySelector("#submit-follow-up"),
+  followUpResult: document.querySelector("#follow-up-result"),
+  followUpDiff: document.querySelector("#follow-up-diff"),
   stageTemplate: document.querySelector("#stage-template"),
   toolTemplate: document.querySelector("#tool-template"),
 };
@@ -79,17 +80,15 @@ function clearError() {
 
 function disableDownloads() {
   elements.downloadMarkdown.disabled = true;
-  elements.downloadJson.disabled = true;
 }
 
 function enableDownloads() {
   elements.downloadMarkdown.disabled = !state.reportMarkdown;
-  elements.downloadJson.disabled = !state.reportJson;
 }
 
 function resetResults() {
   state.reportMarkdown = "";
-  state.reportJson = null;
+  state.openQuestions = [];
   elements.taskId.textContent = "Task ID: -";
   elements.clarityScore.textContent = "-";
   elements.clarityRationale.textContent = "等待运行";
@@ -100,21 +99,24 @@ function resetResults() {
   elements.riskDecisionSummary.textContent = "-";
   elements.riskDecisionDetail.textContent = "等待运行";
   elements.elapsedSummary.textContent = "-";
-  elements.artifactDetail.textContent = "等待运行";
+  elements.artifactDetail.textContent = "等待审核文档";
   elements.markdownPreview.innerHTML = "";
   elements.markdownPreview.textContent = "任务完成后显示报告。";
   elements.markdownPreview.classList.add("empty-state");
-  elements.jsonPreview.textContent = "任务完成后显示 JSON 输出。";
-  elements.jsonPreview.classList.add("empty-state");
   elements.stageResults.innerHTML = "";
   elements.stageResults.textContent = "任务运行后显示阶段记录。";
   elements.stageResults.classList.add("empty-state");
   elements.toolCalls.innerHTML = "";
   elements.toolCalls.textContent = "任务完成后显示工具调用详情。";
   elements.toolCalls.classList.add("empty-state");
-  elements.artifactPaths.innerHTML = "";
-  elements.artifactPaths.textContent = "任务完成后显示归档文件路径。";
-  elements.artifactPaths.classList.add("empty-state");
+  elements.followUpQuestions.innerHTML = "";
+  elements.followUpQuestions.textContent = "任务完成后显示待确认问题。";
+  elements.followUpQuestions.classList.add("empty-state");
+  elements.submitFollowUp.disabled = true;
+  elements.followUpResult.textContent = "提交澄清回答后显示 V2 复审结果。";
+  elements.followUpResult.classList.add("empty-state");
+  elements.followUpDiff.textContent = "重新审核后显示 V1 / V2 diff。";
+  elements.followUpDiff.classList.add("empty-state");
   disableDownloads();
 }
 
@@ -266,34 +268,135 @@ function renderToolCalls(toolCalls) {
   });
 }
 
-function renderArtifactPaths(artifactPaths) {
-  const entries = Object.entries(artifactPaths || {});
-  elements.artifactPaths.innerHTML = "";
-  elements.artifactPaths.classList.remove("empty-state");
+function renderFollowUpPanel(task) {
+  const artifacts = task.artifacts || {};
+  const reportJson = artifacts.report_json || {};
+  const openQuestions = Array.isArray(reportJson.open_questions) ? reportJson.open_questions : [];
+  const isCompleted = task.status === "completed";
+  state.openQuestions = openQuestions;
 
-  if (entries.length === 0) {
-    elements.artifactPaths.textContent = "当前没有可展示的归档路径。";
-    elements.artifactPaths.classList.add("empty-state");
+  elements.followUpQuestions.innerHTML = "";
+  elements.followUpQuestions.classList.remove("empty-state");
+  elements.submitFollowUp.disabled = !isCompleted || openQuestions.length === 0;
+
+  if (openQuestions.length === 0) {
+    elements.followUpQuestions.textContent = "当前报告没有待确认问题。";
+    elements.followUpQuestions.classList.add("empty-state");
+  } else {
+    const previousAnswers = new Map(
+      (artifacts.follow_up?.answers || []).map((item) => [item.question_id, item.answer])
+    );
+    const fragment = document.createDocumentFragment();
+    openQuestions.forEach((question) => {
+      const priority = String(question.priority || "medium").toLowerCase();
+      const required = priority === "high";
+      const item = document.createElement("article");
+      item.className = "clarification-item";
+
+      const title = document.createElement("div");
+      title.className = "clarification-topline";
+
+      const id = document.createElement("strong");
+      id.textContent = `${question.question_id} · ${priority}`;
+
+      const requirementBadge = document.createElement("span");
+      requirementBadge.className = required ? "requirement-badge required" : "requirement-badge optional";
+      requirementBadge.textContent = required ? "必须明确" : "建议明确";
+
+      const text = document.createElement("p");
+      text.textContent = question.question || "未返回问题内容。";
+
+      const impact = document.createElement("small");
+      impact.textContent = question.impact || "";
+
+      const answerField = document.createElement("label");
+      answerField.className = "field follow-up-answer-item";
+
+      const answerLabel = document.createElement("span");
+      answerLabel.textContent = `${question.question_id} 回答${required ? "（必填）" : "（选填）"}`;
+
+      const answerInput = document.createElement("textarea");
+      answerInput.dataset.questionId = question.question_id || "";
+      answerInput.dataset.required = String(required);
+      answerInput.rows = 3;
+      answerInput.value = previousAnswers.get(question.question_id) || "";
+      answerInput.placeholder = required ? "请明确回答该问题，作为 V2 复审依据。" : "如已有明确答案，可在这里补充。";
+      answerInput.disabled = !isCompleted;
+
+      title.append(id, requirementBadge);
+      answerField.append(answerLabel, answerInput);
+      item.append(title, text, impact, answerField);
+      fragment.appendChild(item);
+    });
+    elements.followUpQuestions.appendChild(fragment);
+  }
+
+  const followUp = artifacts.follow_up;
+  if (!followUp) {
     return;
   }
 
-  const fragment = document.createDocumentFragment();
-  entries.forEach(([name, path]) => {
-    const row = document.createElement("article");
-    row.className = "artifact-item";
+  elements.followUpResult.classList.remove("empty-state");
+  elements.followUpResult.textContent =
+    `V2 复审清晰度 ${followUp.clarity_score}/${followUp.metrics?.clarity_threshold ?? "-"}，` +
+    `${followUp.gate_opened ? "已通过" : "未通过"}门禁，` +
+    `回答 ${followUp.answered_question_count} 个问题。`;
+  elements.followUpDiff.classList.remove("empty-state");
+  elements.followUpDiff.textContent = followUp.diff_markdown || "V1 / V2 无文本差异。";
+}
 
-    const label = document.createElement("strong");
-    label.className = "artifact-name";
-    label.textContent = name;
+function parseFollowUpAnswers() {
+  return Array.from(elements.followUpQuestions.querySelectorAll("textarea"))
+    .map((input, index) => {
+      const answer = input.value.trim();
+      if (!answer) {
+        return null;
+      }
+      const fallbackQuestion = state.openQuestions[index];
+      return {
+        question_id: input.dataset.questionId || fallbackQuestion?.question_id || `Q-${String(index + 1).padStart(3, "0")}`,
+        answer,
+      };
+    })
+    .filter(Boolean);
+}
 
-    const value = document.createElement("code");
-    value.className = "artifact-value";
-    value.textContent = path;
+function getMissingRequiredFollowUpQuestions() {
+  return Array.from(elements.followUpQuestions.querySelectorAll("textarea"))
+    .map((input, index) => {
+      if (input.dataset.required !== "true" || input.value.trim()) {
+        return null;
+      }
+      const question = state.openQuestions[index];
+      return question?.question_id || input.dataset.questionId || `Q-${String(index + 1).padStart(3, "0")}`;
+    })
+    .filter(Boolean);
+}
 
-    row.append(label, value);
-    fragment.appendChild(row);
-  });
-  elements.artifactPaths.appendChild(fragment);
+function collectFollowUpAnswersForRequest() {
+  const missingRequired = getMissingRequiredFollowUpQuestions();
+  if (missingRequired.length > 0) {
+    return {
+      answers: [],
+      error: `请先填写必须明确的问题：${missingRequired.join(", ")}`,
+    };
+  }
+  return { answers: parseFollowUpAnswers(), error: "" };
+}
+
+function getDisplayReport(task) {
+  const artifacts = task.artifacts || {};
+  const followUp = artifacts.follow_up || {};
+  if (followUp.report_markdown) {
+    return {
+      markdown: followUp.report_markdown,
+      version: "v2",
+    };
+  }
+  return {
+    markdown: artifacts.report_markdown || task.output || "",
+    version: "v1",
+  };
 }
 
 function updateMetrics(task) {
@@ -302,7 +405,6 @@ function updateMetrics(task) {
   const clarity = artifacts.clarity || {};
   const toolCalls = artifacts.tool_calls || [];
   const metrics = artifacts.metrics || {};
-  const artifactPaths = artifacts.artifact_paths || {};
 
   elements.taskId.textContent = `Task ID: ${task.task_id}`;
   elements.clarityScore.textContent =
@@ -330,7 +432,10 @@ function updateMetrics(task) {
 
   const elapsedMs = metadata.elapsed_ms ?? metrics.elapsed_ms;
   elements.elapsedSummary.textContent = elapsedMs !== undefined ? `${elapsedMs} ms` : "-";
-  elements.artifactDetail.textContent = `${metadata.artifact_count ?? Object.keys(artifactPaths).length ?? 0} 个归档文件`;
+  const displayReport = getDisplayReport(task);
+  elements.artifactDetail.textContent = displayReport.markdown
+    ? `${displayReport.version.toUpperCase()} 审核文档可下载`
+    : "等待审核文档";
 
   if (artifacts.stage_results) {
     renderStageResults(artifacts.stage_results);
@@ -338,16 +443,13 @@ function updateMetrics(task) {
   if (toolCalls.length > 0) {
     renderToolCalls(toolCalls);
   }
-  renderArtifactPaths(artifactPaths);
+  renderFollowUpPanel(task);
 
   if (task.status === "completed") {
-    state.reportMarkdown = artifacts.report_markdown || task.output || "";
-    state.reportJson = artifacts.report_json || null;
+    state.reportMarkdown = displayReport.markdown;
 
     elements.markdownPreview.innerHTML = renderMarkdown(state.reportMarkdown);
     elements.markdownPreview.classList.remove("empty-state");
-    elements.jsonPreview.textContent = JSON.stringify(state.reportJson, null, 2);
-    elements.jsonPreview.classList.remove("empty-state");
     enableDownloads();
 
     const summary = metadata.summary || "任务已完成。";
@@ -442,6 +544,39 @@ async function handleSubmit(event) {
   }
 }
 
+async function handleFollowUpSubmit() {
+  clearError();
+  const { answers, error } = collectFollowUpAnswersForRequest();
+  if (!state.currentTask?.task_id) {
+    showError("请先完成一个需求预审任务。");
+    return;
+  }
+  if (error) {
+    showError(error);
+    return;
+  }
+  if (answers.length === 0) {
+    showError("请至少填写一条澄清回答。");
+    return;
+  }
+
+  elements.submitFollowUp.disabled = true;
+  setStatusMessage("正在基于澄清回答重新审核需求并生成 V2 报告。");
+  try {
+    const task = await apiFetch(`/tasks/${state.currentTask.task_id}/follow-up`, {
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    });
+    state.currentTask = task;
+    updateMetrics(task);
+    setStatusMessage("V2 复审已完成，可查看 V1 / V2 diff。");
+  } catch (error) {
+    showError(`二轮复审失败：${error.message}`);
+  } finally {
+    elements.submitFollowUp.disabled = false;
+  }
+}
+
 function downloadTextFile(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -459,25 +594,11 @@ function handleMarkdownDownload() {
     return;
   }
   const taskTitle = state.currentTask?.title || "requirement-pre-review-report";
-  const persistedPath = state.currentTask?.artifacts?.artifact_paths?.report_markdown;
+  const reportVersion = state.currentTask?.artifacts?.follow_up?.report_markdown ? "v2" : "v1";
   const filename = `${taskTitle.replace(/\s+/g, "-").toLowerCase()}.md`;
-  downloadTextFile(filename, state.reportMarkdown, "text/markdown;charset=utf-8");
-  if (persistedPath) {
-    setStatusMessage(`Markdown 已下载，本地归档路径：${persistedPath}`);
-  }
-}
-
-function handleJsonDownload() {
-  if (!state.reportJson) {
-    return;
-  }
-  const taskTitle = state.currentTask?.title || "requirement-pre-review-report";
-  const persistedPath = state.currentTask?.artifacts?.artifact_paths?.report_json;
-  const filename = `${taskTitle.replace(/\s+/g, "-").toLowerCase()}.json`;
-  downloadTextFile(filename, JSON.stringify(state.reportJson, null, 2), "application/json;charset=utf-8");
-  if (persistedPath) {
-    setStatusMessage(`JSON 已下载，本地归档路径：${persistedPath}`);
-  }
+  const versionedFilename = filename.replace(/\.md$/, `-${reportVersion}.md`);
+  downloadTextFile(versionedFilename, state.reportMarkdown, "text/markdown;charset=utf-8");
+  setStatusMessage(`${reportVersion.toUpperCase()} 审核文档已下载。`);
 }
 
 function handleReset() {
@@ -504,6 +625,6 @@ async function bootstrap() {
 elements.form.addEventListener("submit", handleSubmit);
 elements.resetButton.addEventListener("click", handleReset);
 elements.downloadMarkdown.addEventListener("click", handleMarkdownDownload);
-elements.downloadJson.addEventListener("click", handleJsonDownload);
+elements.submitFollowUp.addEventListener("click", handleFollowUpSubmit);
 
 bootstrap();

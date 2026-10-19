@@ -1,0 +1,11 @@
+{
+  "case_id": "ambiguous_admin_page",
+  "title": "模糊管理页面需求",
+  "requirement_text": "做一个管理页面，尽快上线。",
+  "expected_gate_opened": false,
+  "tags": [
+    "low-completeness",
+    "scope-ambiguous"
+  ],
+  "notes": "低完整度样例，应触发澄清门禁。"
+}

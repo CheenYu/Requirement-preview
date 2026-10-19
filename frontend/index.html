@@ -4,20 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>需求澄清与方案预审 Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="page-shell">
       <header class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Requirement Clarification &amp; Solution Pre-Review</p>
-          <h1>需求澄清与方案预审 Agent</h1>
+          <div class="section-label">
+            <span class="pulse-dot"></span>
+            <span>Requirement Pre-Review</span>
+          </div>
+          <h1>需求澄清与方案预审 <span class="gradient-text">Agent</span></h1>
           <p class="hero-text">
             在需求进入开发前，先做完整度初检、清晰度门禁、方案预审和风险扫描。
           </p>
         </div>
-        <div class="hero-status">
-          <div class="stat-chip">
+        <div class="hero-visual" aria-hidden="true">
+          <div class="orbit-ring"></div>
+          <div class="hero-card hero-card-primary">
+            <span>Clarity Gate</span>
+            <strong>65+</strong>
+          </div>
+          <div class="hero-card hero-card-secondary">
+            <span>Risk Scan</span>
+            <strong>Live</strong>
+          </div>
+          <div class="dot-matrix"></div>
+        </div>
+        <div class="hero-status" aria-label="系统状态">
+          <div class="stat-chip stat-chip-featured">
             <span class="stat-label">API</span>
             <strong id="health-status">检查中</strong>
           </div>
@@ -35,6 +56,10 @@
       <main class="workspace">
         <section class="panel panel-form">
           <div class="panel-heading">
+            <div class="section-label section-label-compact">
+              <span class="pulse-dot"></span>
+              <span>Input</span>
+            </div>
             <h2>需求输入</h2>
             <p>提交真实需求文本，并补充用户、约束和上下文。</p>
           </div>
@@ -94,7 +119,10 @@
             </label>
 
             <div class="form-actions">
-              <button id="submit-button" class="button button-primary" type="submit">发起预审</button>
+              <button id="submit-button" class="button button-primary" type="submit">
+                <span>发起预审</span>
+                <span class="button-arrow" aria-hidden="true">→</span>
+              </button>
               <button id="reset-button" class="button button-secondary" type="button">清空表单</button>
             </div>
           </form>
@@ -102,6 +130,10 @@
 
         <section class="panel panel-results">
           <div class="panel-heading">
+            <div class="section-label section-label-compact">
+              <span class="pulse-dot"></span>
+              <span>Output</span>
+            </div>
             <h2>运行结果</h2>
             <p id="status-message">等待提交需求。</p>
           </div>
@@ -133,9 +165,9 @@
               <small id="risk-decision-detail">等待运行</small>
             </article>
             <article class="metric-card">
-              <span class="metric-label">耗时 / 产物</span>
+              <span class="metric-label">耗时 / 文档</span>
               <strong id="elapsed-summary">-</strong>
-              <small id="artifact-detail">等待运行</small>
+              <small id="artifact-detail">等待审核文档</small>
             </article>
           </div>
 
@@ -148,22 +180,24 @@
 
           <section class="result-block">
             <div class="result-header">
-              <h3>Markdown 报告</h3>
+              <h3>审核报告</h3>
               <div class="inline-actions">
-                <button id="download-markdown" class="button button-tertiary" type="button" disabled>下载 Markdown</button>
+                <button id="download-markdown" class="button button-tertiary" type="button" disabled>下载审核文档</button>
               </div>
             </div>
             <div id="markdown-preview" class="markdown-preview empty-state">任务完成后显示报告。</div>
           </section>
 
-          <section class="result-block">
+          <section class="result-block follow-up-block">
             <div class="result-header">
-              <h3>JSON 结构化结果</h3>
+              <h3>二轮澄清</h3>
               <div class="inline-actions">
-                <button id="download-json" class="button button-tertiary" type="button" disabled>下载 JSON</button>
+                <button id="submit-follow-up" class="button button-tertiary" type="button" disabled>重新审核并生成 V2</button>
               </div>
             </div>
-            <pre id="json-preview" class="code-preview empty-state">任务完成后显示 JSON 输出。</pre>
+            <div id="follow-up-questions" class="clarification-list empty-state">任务完成后显示待确认问题。</div>
+            <div id="follow-up-result" class="follow-up-result empty-state">提交澄清回答后显示 V2 复审结果。</div>
+            <pre id="follow-up-diff" class="diff-preview empty-state">重新审核后显示 V1 / V2 diff。</pre>
           </section>
 
           <section class="result-block">
@@ -171,13 +205,6 @@
               <h3>工具调用状态</h3>
             </div>
             <div id="tool-calls" class="tool-calls empty-state">任务完成后显示工具调用详情。</div>
-          </section>
-
-          <section class="result-block">
-            <div class="result-header">
-              <h3>归档产物路径</h3>
-            </div>
-            <div id="artifact-paths" class="artifact-paths empty-state">任务完成后显示归档文件路径。</div>
           </section>
 
           <section id="error-panel" class="error-panel hidden" aria-live="polite"></section>

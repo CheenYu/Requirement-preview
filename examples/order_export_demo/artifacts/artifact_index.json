@@ -1,0 +1,20 @@
+{
+  "run_dir": "examples/order_export_demo/artifacts",
+  "paths": {
+    "input_json": "examples/order_export_demo/artifacts/input.json",
+    "input_text": "examples/order_export_demo/artifacts/input.txt",
+    "audit": "examples/order_export_demo/artifacts/audit.json",
+    "clarity": "examples/order_export_demo/artifacts/clarity.json",
+    "analysis_markdown": "examples/order_export_demo/artifacts/analysis.md",
+    "architecture_markdown": "examples/order_export_demo/artifacts/architecture.md",
+    "risk_review_markdown": "examples/order_export_demo/artifacts/risk_review.md",
+    "report_markdown": "examples/order_export_demo/artifacts/report.md",
+    "report_json": "examples/order_export_demo/artifacts/report.json",
+    "decision_log": "examples/order_export_demo/artifacts/decision_log.json",
+    "quality_check": "examples/order_export_demo/artifacts/quality_check.json",
+    "tool_calls": "examples/order_export_demo/artifacts/tool_calls.json",
+    "meta": "examples/order_export_demo/artifacts/meta.json",
+    "stage_results": "examples/order_export_demo/artifacts/stage_results.json",
+    "report_snapshot": "examples/order_export_demo/artifacts/report_snapshot.json"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "workflow_id": "e7829d1736fc421eb1dcf9597f8a1a34",
+  "task_id": "example-order-export",
+  "title": "订单导出流程优化",
+  "metrics": {
+    "clarity_score": 99,
+    "clarity_threshold": 65,
+    "gate_opened": true,
+    "risk_count": 4,
+    "decision_count": 7,
+    "tool_call_count": 6,
+    "tool_failure_count": 0,
+    "quality_score": 100,
+    "quality_passed": true,
+    "elapsed_ms": 2
+  },
+  "boundary_snapshots": [
+    {
+      "stage": "requirement_analyst",
+      "confirmed_facts": [
+        "需求标题：订单导出流程优化",
+        "目标用户：运营, 客服",
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "assumptions": [],
+      "open_questions": [],
+      "constraints": [
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "gate_opened": true
+    },
+    {
+      "stage": "solution_architect",
+      "confirmed_facts": [
+        "需求标题：订单导出流程优化",
+        "目标用户：运营, 客服",
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "assumptions": [],
+      "open_questions": [],
+      "constraints": [
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "gate_opened": true
+    },
+    {
+      "stage": "risk_reviewer",
+      "confirmed_facts": [
+        "需求标题：订单导出流程优化",
+        "目标用户：运营, 客服",
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "assumptions": [],
+      "open_questions": [],
+      "constraints": [
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "gate_opened": true
+    },
+    {
+      "stage": "report_synthesizer",
+      "confirmed_facts": [
+        "需求标题：订单导出流程优化",
+        "目标用户：运营, 客服",
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "assumptions": [],
+      "open_questions": [],
+      "constraints": [
+        "约束 1：本月上线",
+        "约束 2：复用现有权限模型"
+      ],
+      "gate_opened": true
+    }
+  ],
+  "function_interface_boundary": {
+    "provider_agnostic": true,
+    "native_function_calling_required": false
+  }
+}

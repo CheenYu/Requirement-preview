@@ -1,0 +1,14 @@
+{
+  "score": 99,
+  "threshold": 65,
+  "passed": true,
+  "strengths": [
+    "objective 已覆盖",
+    "target_users 已覆盖",
+    "scope 已覆盖",
+    "constraints 已覆盖",
+    "data_dependencies 已覆盖"
+  ],
+  "blockers": [],
+  "rationale": "覆盖维度 7/7，缺失维度 0，澄清问题 0 个。"
+}

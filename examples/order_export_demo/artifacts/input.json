@@ -1,0 +1,16 @@
+{
+  "title": "订单导出流程优化",
+  "requirement_text": "目标是降低客服处理订单导出的人工成本。\n运营和客服需要在后台按时间范围筛选并导出订单。\n本期范围包括筛选、导出、失败重试和导出日志。\n需要复用现有权限模型，并在本月上线。\n依赖订单 API 和导出文件存储。\n性能要求是 1000 条订单 3 分钟内导出完成。\n验收标准是运营可以按订单状态筛选并成功下载导出结果。",
+  "supplemental_context": [],
+  "target_users": [
+    "运营",
+    "客服"
+  ],
+  "explicit_constraints": [
+    "本月上线",
+    "复用现有权限模型"
+  ],
+  "metadata": {},
+  "task_id": "example-order-export",
+  "run_dir": "examples/order_export_demo/artifacts"
+}

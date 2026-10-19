@@ -1,0 +1,181 @@
+{
+  "coverage_dimensions": [
+    {
+      "dimension": "objective",
+      "covered": true,
+      "evidence": [
+        "目标",
+        "降低"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "target_users",
+      "covered": true,
+      "evidence": [
+        "运营"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "scope",
+      "covered": true,
+      "evidence": [
+        "范围",
+        "包括"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "constraints",
+      "covered": true,
+      "evidence": [
+        "时间"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "data_dependencies",
+      "covered": true,
+      "evidence": [
+        "api",
+        "导出"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "non_functional",
+      "covered": true,
+      "evidence": [
+        "性能",
+        "权限",
+        "日志"
+      ],
+      "note": ""
+    },
+    {
+      "dimension": "acceptance_criteria",
+      "covered": true,
+      "evidence": [
+        "验收"
+      ],
+      "note": ""
+    }
+  ],
+  "missing_dimensions": [],
+  "confirmed_facts": [
+    "需求标题：订单导出流程优化",
+    "目标用户：运营, 客服",
+    "约束 1：本月上线",
+    "约束 2：复用现有权限模型"
+  ],
+  "requirement_items": [
+    {
+      "requirement_id": "REQ-001",
+      "title": "目标是降低客服处理订单导出的人工成本。",
+      "description": "目标是降低客服处理订单导出的人工成本。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-002",
+      "title": "运营和客服需要在后台按时间范围筛选并导出订单。",
+      "description": "运营和客服需要在后台按时间范围筛选并导出订单。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-003",
+      "title": "本期范围包括筛选、导出、失败重试和导出日志。",
+      "description": "本期范围包括筛选、导出、失败重试和导出日志。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-004",
+      "title": "需要复用现有权限模型，并在本月上线。",
+      "description": "需要复用现有权限模型，并在本月上线。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-005",
+      "title": "依赖订单 API 和导出文件存储。",
+      "description": "依赖订单 API 和导出文件存储。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-006",
+      "title": "性能要求是 1000 条订单 3 分钟内导...",
+      "description": "性能要求是 1000 条订单 3 分钟内导出完成。",
+      "status": "confirmed"
+    },
+    {
+      "requirement_id": "REQ-007",
+      "title": "验收标准是运营可以按订单状态筛选并成功下载...",
+      "description": "验收标准是运营可以按订单状态筛选并成功下载导出结果。",
+      "status": "confirmed"
+    }
+  ],
+  "open_questions": [],
+  "acceptance_criteria": [
+    {
+      "criterion_id": "AC-001",
+      "description": "验收标准是运营可以按订单状态筛选并成功下载导出结果。",
+      "testable": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "DEC-001",
+      "topic": "objective",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-002",
+      "topic": "target_users",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-003",
+      "topic": "scope",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-004",
+      "topic": "constraints",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-005",
+      "topic": "data_dependencies",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-006",
+      "topic": "non_functional",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    },
+    {
+      "decision_id": "DEC-007",
+      "topic": "acceptance_criteria",
+      "status": "confirmed",
+      "rationale": "发现明确证据，可进入后续分析。",
+      "owner": "product"
+    }
+  ],
+  "overall_status": "ready_for_scoring",
+  "notes": [
+    "Requirement items use REQ-xxx numbering.",
+    "Acceptance criteria use AC-xxx numbering.",
+    "Decision log items use DEC-xxx numbering."
+  ]
+}

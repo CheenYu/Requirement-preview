@@ -46,14 +46,17 @@ def build_evaluation_result(
     gate_opened: bool,
     expected_gate_opened: bool,
     tool_error_count: int,
+    tool_call_count: int,
     workflow_latency_ms: int,
 ) -> EvaluationResult:
+    del expected_gate_opened
     return EvaluationResult(
         case_id=case_id,
         schema_passed=validate_report_schema(report_payload),
         section_completeness=calculate_section_completeness(report_markdown),
         gate_opened=gate_opened,
         tool_error_count=tool_error_count,
+        tool_call_count=tool_call_count,
         workflow_latency_ms=workflow_latency_ms,
     )
 
@@ -78,7 +81,7 @@ def summarize_results(
     total_cases = len(results)
     schema_pass_count = sum(1 for item in results if item.schema_passed)
     total_tool_errors = sum(item.tool_error_count for item in results)
-    total_tool_calls_proxy = total_cases * 5
+    total_tool_calls = sum(item.tool_call_count for item in results)
     gate_mismatches = [
         item.case_id for item in results if expected_gates.get(item.case_id) is not None and item.gate_opened != expected_gates[item.case_id]
     ]
@@ -96,7 +99,7 @@ def summarize_results(
         schema_pass_rate=schema_pass_count / total_cases,
         average_section_completeness=sum(item.section_completeness for item in results) / total_cases,
         gate_decision_consistency=(total_cases - len(gate_mismatches)) / total_cases,
-        tool_error_rate=total_tool_errors / total_tool_calls_proxy if total_tool_calls_proxy else 0.0,
+        tool_error_rate=total_tool_errors / total_tool_calls if total_tool_calls else 0.0,
         average_workflow_latency_ms=sum(item.workflow_latency_ms for item in results) / total_cases,
         passed_cases=passed_cases,
         gate_mismatch_cases=gate_mismatches,
@@ -122,7 +125,8 @@ def render_summary_markdown(summary: EvalSummary, results: list[EvaluationResult
         lines.append(
             f"- {result.case_id}: schema_passed={result.schema_passed}, "
             f"section_completeness={result.section_completeness}, gate_opened={result.gate_opened}, "
-            f"tool_error_count={result.tool_error_count}, latency_ms={result.workflow_latency_ms}"
+            f"tool_error_count={result.tool_error_count}, tool_call_count={result.tool_call_count}, "
+            f"latency_ms={result.workflow_latency_ms}"
         )
     if summary.gate_mismatch_cases:
         lines.extend(["", "## Gate Mismatches"])

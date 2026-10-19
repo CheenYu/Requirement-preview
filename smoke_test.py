@@ -36,6 +36,9 @@ REQUIRED_PATHS = [
     "evals",
     "tests",
     "data/.gitkeep",
+    "examples/order_export_demo/sample_requirement.txt",
+    "examples/order_export_demo/sample_report.md",
+    "examples/order_export_demo/sample_report.json",
 ]
 
 SAMPLE_REQUIREMENT = (
@@ -145,7 +148,7 @@ def main() -> None:
     verify_project_layout(root)
     run_workflow_smoke(root)
     run_api_smoke()
-    print("phase9 smoke test passed")
+    print("smoke test passed")
 
 
 if __name__ == "__main__":
