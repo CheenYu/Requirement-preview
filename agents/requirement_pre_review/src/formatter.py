@@ -192,12 +192,13 @@ def build_report_json(
     audit_output: RequirementAuditOutput,
     clarity_output: ClarityScoreOutput,
     risk_output: RiskTaxonomyCheckOutput,
+    solution_plan: SolutionPlan | None = None,
 ) -> RequirementReviewReport:
     requirement_items = renumber_requirement_items(audit_output.requirement_items)
     acceptance_criteria = renumber_acceptance_criteria(audit_output.acceptance_criteria)
     decisions = renumber_decisions(audit_output.decisions)
     scope_priority = infer_scope_priority(audit_output)
-    solution_plan = infer_solution_plan(
+    active_solution_plan = solution_plan or infer_solution_plan(
         requirement_text=requirement_text,
         audit_output=audit_output,
         clarity_output=clarity_output,
@@ -229,7 +230,7 @@ def build_report_json(
         requirement_items=requirement_items,
         open_questions=audit_output.open_questions,
         scope_priority=scope_priority,
-        solution_plan=solution_plan,
+        solution_plan=active_solution_plan,
         risks=risk_output.risks,
         acceptance_criteria=acceptance_criteria,
         next_actions=next_actions,

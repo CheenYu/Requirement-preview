@@ -20,9 +20,15 @@ from .formatter import (
     build_report_json,
     build_risk_review_markdown,
 )
-from .schemas import RequirementReviewReport, WorkflowIntermediateArtifacts
+from .providers import LLMCallRecord, OpenAICompatibleProvider, build_llm_provider
+from .schemas import RequirementReviewReport, SolutionPlan, WorkflowIntermediateArtifacts
 from .storage import WorkflowArtifactStore
-from .tool_contracts import ToolCallRecord, ToolExecutionContext
+from .tool_contracts import (
+    RequirementAuditOutput,
+    RiskTaxonomyCheckOutput,
+    ToolCallRecord,
+    ToolExecutionContext,
+)
 from .tools import ToolRuntime, invoke_tool
 
 
@@ -100,10 +106,12 @@ class RequirementPreReviewWorkflow:
         config: WorkflowConfig | None = None,
         tool_runtime: ToolRuntime | None = None,
         team: RequirementPreReviewTeam | None = None,
+        llm_provider: OpenAICompatibleProvider | None = None,
     ) -> None:
         self.config = config or load_workflow_config()
         self.tool_runtime = tool_runtime or ToolRuntime(config=self.config)
         self.team = team or build_agent_team(config=self.config, tool_runtime=self.tool_runtime)
+        self.llm_provider = llm_provider or build_llm_provider(self.config)
 
     def run(self, payload: WorkflowInput | dict[str, Any]) -> WorkflowResult:
         try:
@@ -114,6 +122,7 @@ class RequirementPreReviewWorkflow:
         workflow_id = uuid4().hex
         stage_results: list[WorkflowStageRecord] = []
         boundary_snapshots: list[StageBoundarySnapshot] = []
+        llm_calls: list[LLMCallRecord] = []
         started_at = perf_counter()
         self.tool_runtime.clear_history()
 
@@ -143,20 +152,40 @@ class RequirementPreReviewWorkflow:
                 task_id=workflow_input.task_id,
                 stage_results=stage_results,
             )
+            audit_output = audit_result.output or {}
+            llm_audit = self._run_llm_stage(
+                stage="llm_requirement_analysis",
+                agent_id="requirement_analyst",
+                payload={
+                    "title": workflow_input.title,
+                    "requirement_text": workflow_input.requirement_text,
+                    "supplemental_context": workflow_input.supplemental_context,
+                    "target_users": workflow_input.target_users,
+                    "explicit_constraints": workflow_input.explicit_constraints,
+                    "max_open_questions": self.config.max_open_questions,
+                    "deterministic_baseline": audit_output,
+                },
+                output_model=RequirementAuditOutput,
+                task_id=workflow_input.task_id,
+                llm_calls=llm_calls,
+                stage_results=stage_results,
+            )
+            if llm_audit is not None:
+                audit_output = llm_audit.model_dump(mode="json")
+
             clarity_result = self._run_tool_stage(
                 stage="clarity_gate",
                 agent_id="requirement_analyst",
                 tool_name="clarity-score",
                 payload={
                     "requirement_text": workflow_input.requirement_text,
-                    "audit_result": audit_result.output,
+                    "audit_result": audit_output,
                     "threshold": self.config.clarity_gate_threshold,
                 },
                 task_id=workflow_input.task_id,
                 stage_results=stage_results,
             )
 
-            audit_output = audit_result.output or {}
             clarity_output = clarity_result.output or {}
             boundary_snapshots.append(
                 self._build_boundary_snapshot(
@@ -172,7 +201,31 @@ class RequirementPreReviewWorkflow:
 
             gate_opened = bool(clarity_output.get("passed", False))
 
-            risk_input_summary = "门禁未通过，方案阶段仅保留澄清占位。" if not gate_opened else "门禁通过，进入方案草案与风险复审。"
+            solution_plan: SolutionPlan | None = None
+            if gate_opened:
+                solution_plan = self._run_llm_stage(
+                    stage="llm_solution_design",
+                    agent_id="solution_architect",
+                    payload={
+                        "title": workflow_input.title,
+                        "requirement_text": workflow_input.requirement_text,
+                        "audit": audit_output,
+                        "clarity": clarity_output,
+                    },
+                    output_model=SolutionPlan,
+                    task_id=workflow_input.task_id,
+                    llm_calls=llm_calls,
+                    stage_results=stage_results,
+                )
+
+            risk_input_summary = (
+                "门禁未通过，方案阶段仅保留澄清占位。"
+                if not gate_opened
+                else json.dumps(
+                    solution_plan.model_dump(mode="json") if solution_plan is not None else {"status": "gate_opened"},
+                    ensure_ascii=False,
+                )
+            )
             provisional_risk_result = self._run_tool_stage(
                 stage="risk_review",
                 agent_id="risk_reviewer",
@@ -186,12 +239,33 @@ class RequirementPreReviewWorkflow:
                 task_id=workflow_input.task_id,
                 stage_results=stage_results,
             )
+            risk_output = provisional_risk_result.output or {}
+            llm_risk = self._run_llm_stage(
+                stage="llm_risk_review",
+                agent_id="risk_reviewer",
+                payload={
+                    "title": workflow_input.title,
+                    "requirement_text": workflow_input.requirement_text,
+                    "audit": audit_output,
+                    "clarity": clarity_output,
+                    "solution_plan": solution_plan.model_dump(mode="json") if solution_plan is not None else None,
+                    "max_risks": self.config.max_risks_per_run,
+                    "deterministic_baseline": risk_output,
+                },
+                output_model=RiskTaxonomyCheckOutput,
+                task_id=workflow_input.task_id,
+                llm_calls=llm_calls,
+                stage_results=stage_results,
+            )
+            if llm_risk is not None:
+                risk_output = llm_risk.model_dump(mode="json")
 
             report_json = build_report_json(
                 requirement_text=workflow_input.requirement_text,
                 audit_output=self._validate_model("audit", audit_output),
                 clarity_output=self._validate_model("clarity", clarity_output),
-                risk_output=self._validate_model("risk", provisional_risk_result.output or {}),
+                risk_output=self._validate_model("risk", risk_output),
+                solution_plan=solution_plan,
             )
             boundary_snapshots.append(
                 self._build_boundary_snapshot(
@@ -215,7 +289,7 @@ class RequirementPreReviewWorkflow:
             )
 
             risk_review_markdown = build_risk_review_markdown(
-                self._validate_model("risk", provisional_risk_result.output or {})
+                self._validate_model("risk", risk_output)
             )
             boundary_snapshots.append(
                 self._build_boundary_snapshot(
@@ -282,6 +356,8 @@ class RequirementPreReviewWorkflow:
             artifact_paths.update(store.persist_intermediate_artifacts(intermediate_artifacts))
             tool_call_records = self.tool_runtime.list_call_records()
             tool_failure_count = sum(1 for item in tool_call_records if not item.success)
+            llm_failure_count = sum(1 for item in llm_calls if not item.success)
+            llm_total_tokens = sum(item.total_tokens or 0 for item in llm_calls)
             elapsed_ms = int((perf_counter() - started_at) * 1000)
             metrics = {
                 "clarity_score": clarity_output.get("score", 0),
@@ -291,6 +367,10 @@ class RequirementPreReviewWorkflow:
                 "decision_count": len(report_json.decisions),
                 "tool_call_count": len(tool_call_records),
                 "tool_failure_count": tool_failure_count,
+                "llm_enabled": self.llm_provider is not None,
+                "llm_call_count": len(llm_calls),
+                "llm_failure_count": llm_failure_count,
+                "llm_total_tokens": llm_total_tokens,
                 "quality_score": (quality_result.output or {}).get("score", 0),
                 "quality_passed": (quality_result.output or {}).get("passed", False),
                 "elapsed_ms": elapsed_ms,
@@ -309,6 +389,7 @@ class RequirementPreReviewWorkflow:
                         "title": workflow_input.title,
                         "metrics": metrics,
                         "boundary_snapshots": [item.model_dump(mode="json") for item in boundary_snapshots],
+                        "llm_calls": [item.model_dump(mode="json") for item in llm_calls],
                         "function_interface_boundary": {
                             "provider_agnostic": self.team.function_boundary.provider_agnostic,
                             "native_function_calling_required": self.team.function_boundary.native_function_calling_required,
@@ -347,6 +428,9 @@ class RequirementPreReviewWorkflow:
                     "elapsed_ms": elapsed_ms,
                     "team_execution_order": self.team.execution_order,
                     "boundary_snapshots": [item.model_dump(mode="json") for item in boundary_snapshots],
+                    "llm_provider": "openai-compatible" if self.llm_provider is not None else None,
+                    "llm_model": self.config.llm.model if self.llm_provider is not None else None,
+                    "llm_calls": [item.model_dump(mode="json") for item in llm_calls],
                     "artifact_count": len(artifact_paths),
                 },
             )
@@ -368,6 +452,53 @@ class RequirementPreReviewWorkflow:
         if workflow_input.run_dir:
             return WorkflowArtifactStore(workflow_input.run_dir)
         return WorkflowArtifactStore.from_task(workflow_input.task_id)
+
+    def _run_llm_stage(
+        self,
+        *,
+        stage: str,
+        agent_id: str,
+        payload: dict[str, Any],
+        output_model: type[BaseModel],
+        task_id: str | None,
+        llm_calls: list[LLMCallRecord],
+        stage_results: list[WorkflowStageRecord],
+    ) -> BaseModel | None:
+        if self.llm_provider is None:
+            return None
+
+        started_at = datetime.now()
+        generation = self.llm_provider.generate_structured(
+            stage=stage,
+            system_prompt=self.team.get_agent(agent_id).system_prompt,
+            payload=payload,
+            output_model=output_model,
+        )
+        finished_at = datetime.now()
+        llm_calls.append(generation.record)
+        stage_results.append(
+            self._make_stage_record(
+                stage=stage,
+                agent_id=agent_id,
+                status="completed" if generation.output is not None else "failed",
+                started_at=started_at,
+                finished_at=finished_at,
+                summary=(
+                    "模型结构化输出已通过 Schema 校验。"
+                    if generation.output is not None
+                    else "模型调用失败或输出无效，已使用确定性规则结果降级。"
+                ),
+                tool_names=[f"llm:{self.config.llm.model}"],
+                error=generation.record.error,
+            )
+        )
+        event_logger.emit(
+            "llm_invocation",
+            task_id=task_id,
+            agent_id=agent_id,
+            payload=generation.record.model_dump(mode="json"),
+        )
+        return generation.output
 
     def _run_tool_stage(
         self,
@@ -484,6 +615,11 @@ def run_workflow(
     *,
     config: WorkflowConfig | None = None,
     tool_runtime: ToolRuntime | None = None,
+    llm_provider: OpenAICompatibleProvider | None = None,
 ) -> WorkflowResult:
-    workflow = RequirementPreReviewWorkflow(config=config, tool_runtime=tool_runtime)
+    workflow = RequirementPreReviewWorkflow(
+        config=config,
+        tool_runtime=tool_runtime,
+        llm_provider=llm_provider,
+    )
     return workflow.run(payload)

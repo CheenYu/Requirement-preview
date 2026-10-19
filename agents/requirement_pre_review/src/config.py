@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _read_env(key: str, default: str) -> str:
@@ -34,6 +34,18 @@ def _read_float(key: str, default: float) -> float:
     return float(raw)
 
 
+def _read_bool(key: str, default: bool) -> bool:
+    raw = os.getenv(key)
+    if raw is None or not raw.strip():
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{key} must be a boolean value")
+
+
 @dataclass(frozen=True)
 class WorkflowLLMSettings:
     model: str
@@ -41,6 +53,8 @@ class WorkflowLLMSettings:
     base_url: str
     temperature: float
     timeout_seconds: int
+    enabled: bool = False
+    max_tokens: int = 4096
 
 
 @dataclass(frozen=True)
@@ -52,6 +66,8 @@ class WorkflowConfig:
     max_risks_per_run: int
 
     def validate(self) -> None:
+        if self.llm.max_tokens <= 0:
+            raise ValueError("LLM_MAX_TOKENS must be positive")
         if self.max_requirement_length <= 0:
             raise ValueError("max_requirement_length must be positive")
         if not 0 <= self.clarity_gate_threshold <= 100:
@@ -71,6 +87,8 @@ def load_workflow_config() -> WorkflowConfig:
             base_url=_read_env("LLM_BASE_URL", "https://api.openai.com/v1"),
             temperature=_read_float("LLM_TEMPERATURE", 0.2),
             timeout_seconds=_read_int("LLM_TIMEOUT_SECONDS", 120),
+            enabled=_read_bool("LLM_ENABLED", False),
+            max_tokens=_read_int("LLM_MAX_TOKENS", 4096),
         ),
         max_requirement_length=_read_int("MAX_REQUIREMENT_LENGTH", 50000),
         clarity_gate_threshold=_read_int("CLARITY_GATE_THRESHOLD", 65),
